@@ -1,28 +1,30 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AppProvider } from './context/AppContext'
-import Layout from './components/Layout'
-import HomePage from './pages/HomePage'
-import DiscoverPage from './pages/DiscoverPage'
-import BookDetailPage from './pages/BookDetailPage'
-import BookClubsPage from './pages/BookClubsPage'
-import ProfilePage from './pages/ProfilePage'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MarketProvider } from './context/MarketContext';
+import Layout from './components/Layout';
+import DashboardPage from './pages/DashboardPage';
+import ScreenerPage from './pages/ScreenerPage';
+import StockDetailPage from './pages/StockDetailPage';
+import ChartsPage from './pages/ChartsPage';
+import NewsPage from './pages/NewsPage';
+import WatchlistPage from './pages/WatchlistPage';
 
 function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
+      <MarketProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path="discover" element={<DiscoverPage />} />
-            <Route path="book/:id" element={<BookDetailPage />} />
-            <Route path="clubs" element={<BookClubsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
+            <Route index element={<DashboardPage />} />
+            <Route path="screener" element={<ScreenerPage />} />
+            <Route path="stock/:symbol" element={<StockDetailPage />} />
+            <Route path="charts" element={<ChartsPage />} />
+            <Route path="news" element={<NewsPage />} />
+            <Route path="watchlist" element={<WatchlistPage />} />
           </Route>
         </Routes>
-      </AppProvider>
+      </MarketProvider>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

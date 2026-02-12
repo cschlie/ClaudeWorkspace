@@ -1,38 +1,67 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Playfair Display', 'Georgia', serif;
+  --font-sans: 'Inter', 'SF Mono', 'Consolas', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
 
-  --color-primary: #1b0a3c;
-  --color-primary-light: #2d1566;
-  --color-accent: #e8a838;
-  --color-accent-light: #f0c060;
-  --color-surface: #14091f;
-  --color-surface-light: #1e1030;
-  --color-surface-lighter: #2a1a40;
-  --color-text: #f0e6ff;
-  --color-text-muted: #9b8ab8;
-  --color-border: #3d2a5c;
-  --color-success: #4ade80;
-  --color-danger: #f87171;
-  --color-star: #f59e0b;
+  /* Bloomberg dark palette */
+  --color-bg: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-light: #1a1a1a;
+  --color-surface-lighter: #222222;
+  --color-surface-hover: #2a2a2a;
+  --color-panel: #141414;
+  --color-border: #2a2a2a;
+  --color-border-light: #333333;
+
+  --color-text: #e0e0e0;
+  --color-text-muted: #888888;
+  --color-text-dim: #555555;
+
+  --color-accent: #ff8c00;
+  --color-accent-light: #ffaa33;
+  --color-accent-dim: #663800;
+
+  --color-green: #00c853;
+  --color-green-dim: #003d19;
+  --color-red: #ff1744;
+  --color-red-dim: #4d0011;
+  --color-blue: #2979ff;
+  --color-blue-dim: #0d2659;
+  --color-yellow: #ffd600;
+  --color-cyan: #00e5ff;
+  --color-purple: #d500f9;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--color-surface);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-light);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Lightweight charts container fix */
+.tv-lightweight-charts {
   border-radius: 4px;
 }
