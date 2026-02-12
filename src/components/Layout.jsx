@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useMarket } from '../context/MarketContext';
 import { formatTimestamp } from '../utils/format';
 import {
-  LayoutDashboard, Search, LineChart, Newspaper, Star,
+  LayoutDashboard, Search, LineChart, Newspaper, Star, Briefcase,
   RefreshCw, Activity,
 } from 'lucide-react';
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/screener', icon: Search, label: 'Screener' },
   { to: '/charts', icon: LineChart, label: 'Charts' },
+  { to: '/portfolio', icon: Briefcase, label: 'Portfolio' },
   { to: '/news', icon: Newspaper, label: 'News' },
   { to: '/watchlist', icon: Star, label: 'Watchlist' },
 ];
