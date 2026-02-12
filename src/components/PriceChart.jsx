@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
 import { getChart } from '../services/api';
 
 const RANGES = [
@@ -49,7 +49,7 @@ export default function PriceChart({ symbol, height = 300, showVolume = true, sh
 
     chartRef.current = chart;
 
-    const candlestickSeries = chart.addCandlestickSeries({
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#00c853',
       downColor: '#ff1744',
       borderUpColor: '#00c853',
@@ -60,10 +60,10 @@ export default function PriceChart({ symbol, height = 300, showVolume = true, sh
 
     let volumeSeries = null;
     if (showVolume) {
-      volumeSeries = chart.addHistogramSeries({
+      volumeSeries = chart.addSeries(HistogramSeries, {
         color: '#2979ff',
         priceFormat: { type: 'volume' },
-        priceScaleId: '',
+        priceScaleId: 'volume',
       });
       volumeSeries.priceScale().applyOptions({
         scaleMargins: { top: 0.85, bottom: 0 },

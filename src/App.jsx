@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { MarketProvider } from './context/MarketContext';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
@@ -10,7 +10,7 @@ import WatchlistPage from './pages/WatchlistPage';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <MarketProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -23,7 +23,7 @@ function App() {
           </Route>
         </Routes>
       </MarketProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

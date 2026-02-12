@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, AreaSeries } from 'lightweight-charts';
 import { getChart } from '../services/api';
 
 export default function MiniChart({ symbol, height = 60, color = '#2979ff' }) {
@@ -26,7 +26,7 @@ export default function MiniChart({ symbol, height = 60, color = '#2979ff' }) {
       handleScale: false,
     });
 
-    const series = chart.addAreaSeries({
+    const series = chart.addSeries(AreaSeries, {
       lineColor: color,
       topColor: `${color}40`,
       bottomColor: `${color}05`,
