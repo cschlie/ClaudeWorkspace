@@ -193,6 +193,10 @@ instruments:
     name: Nissan Motor Co.
     type: stock
 
+  - ticker: VEND.OL
+    name: Vend Marketplaces ASA
+    type: stock
+
 # --- Private / unlisted instruments (news-only, via NewsAPI keyword search) ---
 # Monitored for: news headlines only (no price data available)
 # keywords: list of phrases that must appear in the article HEADLINE to alert.
@@ -206,7 +210,7 @@ instruments:
 #     (structured products — no issuer name to search)
 #   Digital Asset Treasury positions (portfolio category, not a company)
 #   Pembroke (ambiguous — matches many unrelated entities)
-#   Vend Marketplaces ASA (insufficient info to build clean keywords)
+#   Vend Marketplaces ASA → moved to instruments section as VEND.OL (Oslo Børs)
 #   M&A / factor / asset-allocation category lines (not individual issuers)
 
 keyword_watches:
