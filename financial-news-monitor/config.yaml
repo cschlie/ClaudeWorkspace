@@ -3,30 +3,214 @@
 # Copy .env.example to .env and fill in your API keys.
 
 # --- Instruments to watch ---
-# type: stock | bond | etf | crypto | index
-# ticker: symbol used by Finnhub (e.g. AAPL, TSLA, BTC)
+# type: stock | convertible | bond | etf | crypto | index
+# ticker: symbol used by Finnhub
 # name: human-readable label used in alerts
+#
+# Excluded (private / no Finnhub coverage):
+#   Adler Financing SARL, Cheplapharm, Rekeep SPA, MOTION BONDCO,
+#   BELLIS ACQUISITION, Sherwood Financing, INEOS Finance,
+#   CMBS 2016-C6 D / 2015-C32 B / 2015-C27 B / 2015-C29 D / 2015-C30 D,
+#   X/Twitter (private), Eyecare Partners (private), DAT positions (category),
+#   Kodiak AI KDK warrants (OTC), Waldorf Energy / Priority 1 Logistics /
+#   Trustly / Vic Properties (all private), Nielsen (went private 2022),
+#   Desktop Metal (acquired/delisted 2024), Stemmer Imaging (delisted),
+#   SNP Schneider (delisted), Avidity Biosciences (acquired by Novartis),
+#   Vend Marketplaces ASA (no ticker found), Cineworld (went private 2023),
+#   Pembroke (unidentifiable), all M&A/factor/allocation category lines.
+#
+# NOTE: 44 instruments × 2 Finnhub calls each = 88 calls/cycle.
+#   Free tier limit is 60/min — raise check_interval_minutes to 30
+#   or upgrade your Finnhub plan if you see rate-limit warnings.
+
 instruments:
-  - ticker: AAPL
-    name: Apple Inc.
+
+  # ── US Convertible Bond Issuers ──────────────────────────────────────────
+  - ticker: MSTR
+    name: MicroStrategy Inc.
+    type: convertible
+
+  - ticker: PRCH
+    name: Porch Group Inc.
+    type: bond
+
+  - ticker: TDOC
+    name: Teladoc Health Inc.
+    type: convertible
+
+  - ticker: CNMD
+    name: Conmed Corp.
+    type: convertible
+
+  - ticker: BE
+    name: Bloom Energy Corp.
+    type: convertible
+
+  - ticker: SMCI
+    name: Super Micro Computer Inc.
+    type: convertible
+
+  - ticker: UBER
+    name: Uber Technologies Inc.
+    type: convertible
+
+  - ticker: ODD
+    name: Oddity Financial Ltd.
+    type: convertible
+
+  - ticker: COIN
+    name: Coinbase Global Inc.
+    type: convertible
+
+  - ticker: FIVN
+    name: Five9 Inc.
+    type: bond
+
+  - ticker: WIX
+    name: Wix.com Ltd.
     type: stock
-  - ticker: TSLA
-    name: Tesla Inc.
+
+  - ticker: BL
+    name: BlackLine Inc.
+    type: convertible
+
+  - ticker: SKLZ
+    name: Skillz Inc.
+    type: bond
+
+  - ticker: KLXE
+    name: KLX Energy Services Holdings Inc.
+    type: bond
+
+  # ── US Equities ──────────────────────────────────────────────────────────
+  - ticker: AMC
+    name: AMC Entertainment Holdings Inc.
     type: stock
-  - ticker: MSFT
-    name: Microsoft Corp.
+
+  - ticker: AZUL
+    name: Azul SA
     type: stock
-  - ticker: SPY
-    name: S&P 500 ETF
-    type: etf
-  - ticker: NVDA
-    name: NVIDIA Corp.
+
+  - ticker: BABA
+    name: Alibaba Group Holding Ltd.
+    type: stock
+
+  - ticker: CFLT
+    name: Confluent Inc.
+    type: stock
+
+  - ticker: CDE
+    name: Coeur Mining Inc.
+    type: stock
+
+  - ticker: CYBR
+    name: CyberArk Software Ltd.
+    type: stock
+
+  - ticker: EXAS
+    name: Exact Sciences Corp.
+    type: stock
+
+  - ticker: KMB
+    name: Kimberly-Clark Corp.
+    type: stock
+
+  - ticker: LAAC
+    name: Lithium Americas Argentina Corp.
+    type: stock
+
+  - ticker: PANW
+    name: Palo Alto Networks Inc.
+    type: stock
+
+  - ticker: PLNT
+    name: Planet Fitness Inc.
+    type: stock
+
+  - ticker: QGEN
+    name: Qiagen NV
+    type: stock
+
+  - ticker: RNA
+    name: RNA Inc.
+    type: stock
+
+  - ticker: AXL
+    name: American Axle & Manufacturing Holdings Inc.
+    type: stock
+
+  - ticker: TEX
+    name: Terex Corp.
+    type: stock
+
+  - ticker: VSAT
+    name: Viasat Inc.
+    type: stock
+
+  - ticker: WBD
+    name: Warner Bros. Discovery Inc.
+    type: stock
+
+  # ── European Equities ────────────────────────────────────────────────────
+  - ticker: CLNX.MC
+    name: Cellnex Telecom SA
+    type: stock
+
+  - ticker: NDX1.DE
+    name: Nordex SE
+    type: stock
+
+  - ticker: DSY.PA
+    name: Dassault Aviation SA
+    type: stock
+
+  - ticker: WLN.PA
+    name: Worldline SA
+    type: stock
+
+  - ticker: BIG.PA
+    name: Bigben Interactive SA
+    type: stock
+
+  - ticker: GEKTERNA.AT
+    name: GEK Terna Holding Real Estate
+    type: stock
+
+  - ticker: BELA.AT
+    name: Jumbo SA
+    type: stock
+
+  - ticker: JUST.L
+    name: Just Group plc
+    type: stock
+
+  - ticker: PRSR.L
+    name: Prestige Funds plc
+    type: stock
+
+  # ── Italian Equities ─────────────────────────────────────────────────────
+  - ticker: TNXT.MI
+    name: Tinexta SpA
+    type: stock
+
+  - ticker: BPSO.MI
+    name: Banca Popolare di Sondrio
+    type: stock
+
+  - ticker: EGLA.MI
+    name: EGLA SpA
+    type: stock
+
+  # ── Asia / Other ─────────────────────────────────────────────────────────
+  - ticker: 7201.T
+    name: Nissan Motor Co.
     type: stock
 
 # --- Polling interval ---
 # How often to check for new news (in minutes).
-# Free Finnhub tier allows ~60 requests/minute; keep this >= 5.
-check_interval_minutes: 15
+# Free Finnhub tier allows ~60 requests/minute.
+# With 44 instruments (88 calls/cycle), recommend >= 30 minutes.
+check_interval_minutes: 30
 
 # --- Analysis settings ---
 analysis:
@@ -39,23 +223,15 @@ analysis:
 
 # --- Email alert settings ---
 email:
-  # SMTP server details (Gmail example shown; works with most providers)
   smtp_host: smtp.gmail.com
   smtp_port: 587
   use_tls: true
-
-  # Sender address (must match the account whose password is in .env)
   from_address: "your-alerts@gmail.com"
-
-  # One or more recipient addresses
   to_addresses:
     - "you@example.com"
-
-  # Email subject prefix
   subject_prefix: "[FinNews]"
 
 # --- State file ---
-# Path (relative to this config) where seen article IDs are persisted.
 state_file: .state.json
 
 # --- Logging ---
