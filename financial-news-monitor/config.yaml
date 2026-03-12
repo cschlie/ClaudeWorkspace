@@ -1,0 +1,67 @@
+# Financial News Monitor Configuration
+# =====================================================
+# Copy .env.example to .env and fill in your API keys.
+
+# --- Instruments to watch ---
+# type: stock | bond | etf | crypto | index
+# ticker: symbol used by Finnhub (e.g. AAPL, TSLA, BTC)
+# name: human-readable label used in alerts
+instruments:
+  - ticker: AAPL
+    name: Apple Inc.
+    type: stock
+  - ticker: TSLA
+    name: Tesla Inc.
+    type: stock
+  - ticker: MSFT
+    name: Microsoft Corp.
+    type: stock
+  - ticker: SPY
+    name: S&P 500 ETF
+    type: etf
+  - ticker: NVDA
+    name: NVIDIA Corp.
+    type: stock
+
+# --- Polling interval ---
+# How often to check for new news (in minutes).
+# Free Finnhub tier allows ~60 requests/minute; keep this >= 5.
+check_interval_minutes: 15
+
+# --- Analysis settings ---
+analysis:
+  # Minimum confidence (0.0–1.0) for Claude to flag an article as significant.
+  # Higher = fewer, more certain alerts. Lower = more alerts.
+  min_confidence: 0.7
+
+  # Only alert on these sentiment directions.
+  # Options: positive | negative | both
+  alert_on: both
+
+  # Maximum articles to analyze per instrument per check cycle.
+  # Keeps API costs predictable.
+  max_articles_per_instrument: 5
+
+# --- Email alert settings ---
+email:
+  # SMTP server details (Gmail example shown; works with most providers)
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  use_tls: true
+
+  # Sender address (must match the account whose password is in .env)
+  from_address: "your-alerts@gmail.com"
+
+  # One or more recipient addresses
+  to_addresses:
+    - "you@example.com"
+
+  # Email subject prefix
+  subject_prefix: "[FinNews]"
+
+# --- State file ---
+# Path (relative to this config) where seen article IDs are persisted.
+state_file: .state.json
+
+# --- Logging ---
+log_level: INFO   # DEBUG | INFO | WARNING | ERROR
