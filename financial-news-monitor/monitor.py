@@ -30,7 +30,7 @@ from dotenv import load_dotenv
 
 from alerter import EmailAlerter
 from analyzer import Alert, PriceChecker
-from fetcher import FinnhubFetcher
+from fetcher import FinnhubFetcher, NewsAPIFetcher
 from state import SeenArticleState
 
 # ---------------------------------------------------------------------------
@@ -51,11 +51,15 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(fh)
 
 
-def load_env() -> dict[str, str]:
+def load_env(needs_news_api: bool = False) -> dict[str, str]:
     load_dotenv()
+    required = ["FINNHUB_API_KEY", "SMTP_PASSWORD"]
+    if needs_news_api:
+        required.append("NEWS_API_KEY")
+
     missing = []
     keys = {}
-    for var in ("FINNHUB_API_KEY", "SMTP_PASSWORD"):
+    for var in required:
         val = os.getenv(var)
         if not val:
             missing.append(var)
@@ -91,6 +95,14 @@ class Monitor:
         self._state = SeenArticleState(state_file=state_path)
 
         self._max_articles = config["analysis"].get("max_articles_per_instrument", 5)
+
+        # keyword_watches: private/unlisted instruments monitored via NewsAPI
+        self._keyword_instruments = config.get("keyword_watches", [])
+        self._news_fetcher: NewsAPIFetcher | None = (
+            NewsAPIFetcher(api_key=env["NEWS_API_KEY"])
+            if self._keyword_instruments and env.get("NEWS_API_KEY")
+            else None
+        )
 
         # In-memory cooldown for price swing alerts: ticker → last alert timestamp
         # Prevents re-alerting on the same swing every cycle.
@@ -140,6 +152,35 @@ class Monitor:
                 all_alerts.append(swing)
                 self._last_price_alert[ticker] = time.time()
 
+        # --- Keyword-only news (private/unlisted instruments via NewsAPI) ---
+        if self._news_fetcher and self._keyword_instruments:
+            self._logger.info(
+                "Fetching keyword news for %d private instruments.",
+                len(self._keyword_instruments),
+            )
+            batch = self._news_fetcher.fetch_keyword_news(
+                instruments=self._keyword_instruments,
+                lookback_hours=self._lookback_hours(),
+                max_per_instrument=self._max_articles,
+            )
+            for instr in self._keyword_instruments:
+                articles = batch.get(instr["name"], [])
+                new_articles = self._state.filter_unseen(articles)
+                self._logger.debug(
+                    "  %d new keyword article(s) for %s.", len(new_articles), instr["name"]
+                )
+                for article in new_articles:
+                    all_alerts.append(Alert(
+                        kind="news",
+                        ticker=instr.get("ticker", instr["name"][:8].upper()),
+                        name=instr["name"],
+                        headline=article["headline"],
+                        url=article["url"],
+                        source=article["source"],
+                        article_datetime=article["datetime"],
+                    ))
+                self._state.mark_seen_batch([a["id"] for a in new_articles])
+
         self._state.save()
 
         if all_alerts:
@@ -188,8 +229,9 @@ def main() -> None:
     setup_logging(config.get("log_level", "INFO"))
     logger = logging.getLogger("main")
 
+    needs_news_api = bool(config.get("keyword_watches"))
     try:
-        env = load_env()
+        env = load_env(needs_news_api=needs_news_api)
     except EnvironmentError as exc:
         logger.error("%s", exc)
         sys.exit(1)

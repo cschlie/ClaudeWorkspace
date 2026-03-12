@@ -2,26 +2,13 @@
 # =====================================================
 # Copy .env.example to .env and fill in your API keys.
 
-# --- Instruments to watch ---
-# type: stock | convertible | bond | etf | crypto | index
-# ticker: symbol used by Finnhub
-# name: human-readable label used in alerts
-#
-# Excluded (private / no Finnhub coverage):
-#   Adler Financing SARL, Cheplapharm, Rekeep SPA, MOTION BONDCO,
-#   BELLIS ACQUISITION, Sherwood Financing, INEOS Finance,
-#   CMBS 2016-C6 D / 2015-C32 B / 2015-C27 B / 2015-C29 D / 2015-C30 D,
-#   X/Twitter (private), Eyecare Partners (private), DAT positions (category),
-#   Kodiak AI KDK warrants (OTC), Waldorf Energy / Priority 1 Logistics /
-#   Trustly / Vic Properties (all private), Nielsen (went private 2022),
-#   Desktop Metal (acquired/delisted 2024), Stemmer Imaging (delisted),
-#   SNP Schneider (delisted), Avidity Biosciences (acquired by Novartis),
-#   Vend Marketplaces ASA (no ticker found), Cineworld (went private 2023),
-#   Pembroke (unidentifiable), all M&A/factor/allocation category lines.
+# --- Instruments to watch (exchange-listed, via Finnhub) ---
+# Monitored for: news articles + intraday price swings
+# ticker: Finnhub symbol  |  type: stock | convertible | bond | etf
 #
 # NOTE: 44 instruments × 2 Finnhub calls each = 88 calls/cycle.
-#   Free tier limit is 60/min — raise check_interval_minutes to 30
-#   or upgrade your Finnhub plan if you see rate-limit warnings.
+#   Free tier limit is 60/min — check_interval_minutes is set to 30
+#   to stay safe. Upgrade to Finnhub Starter (~$50/mo) for 15 min.
 
 instruments:
 
@@ -205,6 +192,112 @@ instruments:
   - ticker: 7201.T
     name: Nissan Motor Co.
     type: stock
+
+# --- Private / unlisted instruments (news-only, via NewsAPI keyword search) ---
+# Monitored for: news headlines only (no price data available)
+# keywords: list of phrases that must appear in the article HEADLINE to alert.
+#           Use specific multi-word phrases to avoid noise (e.g. "INEOS Finance"
+#           not just "INEOS"). All instruments are batched into a single API call.
+# ticker: short display label used in email alerts (not a real exchange ticker)
+#
+# Skipped entirely (no useful keywords exist):
+#   X / Twitter (name appears in unrelated articles constantly)
+#   CMBS 2016-C6 D / 2015-C32 B / 2015-C27 B / 2015-C29 D / 2015-C30 D
+#     (structured products — no issuer name to search)
+#   Digital Asset Treasury positions (portfolio category, not a company)
+#   Pembroke (ambiguous — matches many unrelated entities)
+#   Vend Marketplaces ASA (insufficient info to build clean keywords)
+#   M&A / factor / asset-allocation category lines (not individual issuers)
+
+keyword_watches:
+
+  # ── Private Bond Vehicles ─────────────────────────────────────────────────
+  - ticker: ADLER
+    name: Adler Financing SARL
+    type: bond
+    keywords: ["Adler Financing", "Adler Real Estate"]
+
+  - ticker: BELLIS
+    name: Bellis Acquisition Company plc
+    type: bond
+    keywords: ["Bellis Acquisition", "Bellis Finco"]
+
+  - ticker: MTBCO
+    name: Motion Bondco Designated Activity Company
+    type: bond
+    keywords: ["Motion Bondco"]
+
+  - ticker: SHRWD
+    name: Sherwood Financing plc
+    type: bond
+    keywords: ["Sherwood Financing"]
+
+  - ticker: INEOS
+    name: INEOS Finance plc
+    type: bond
+    keywords: ["INEOS Finance", "INEOS Group"]
+
+  - ticker: REKEEP
+    name: Rekeep SpA
+    type: bond
+    keywords: ["Rekeep"]
+
+  # ── Private Companies ─────────────────────────────────────────────────────
+  - ticker: CHLPH
+    name: Cheplapharm Arzneimittel GmbH
+    type: stock
+    keywords: ["Cheplapharm"]
+
+  - ticker: EYECARE
+    name: Eyecare Partners
+    type: stock
+    keywords: ["Eyecare Partners"]
+
+  - ticker: TRUSTLY
+    name: Trustly Group AB
+    type: stock
+    keywords: ["Trustly"]
+
+  - ticker: WLDRF
+    name: Waldorf Energy
+    type: bond
+    keywords: ["Waldorf Energy"]
+
+  - ticker: P1LOG
+    name: Priority 1 Logistics
+    type: stock
+    keywords: ["Priority 1 Logistics"]
+
+  - ticker: VICPROP
+    name: Vic Properties
+    type: stock
+    keywords: ["Vic Properties"]
+
+  - ticker: KDK
+    name: Kodiak AI
+    type: stock
+    keywords: ["Kodiak AI"]
+
+  # ── Delisted / Restructured ───────────────────────────────────────────────
+  - ticker: DM
+    name: Desktop Metal Inc.
+    type: convertible
+    keywords: ["Desktop Metal"]
+
+  - ticker: CINE
+    name: Cineworld Group
+    type: bond
+    keywords: ["Cineworld"]
+
+  - ticker: STMR
+    name: Stemmer Imaging AG
+    type: stock
+    keywords: ["Stemmer Imaging"]
+
+  - ticker: SNP
+    name: SNP Schneider-Neureither & Partner SE
+    type: stock
+    keywords: ["SNP Schneider", "SNP SE"]
 
 # --- Polling interval ---
 # How often to check for new news (in minutes).

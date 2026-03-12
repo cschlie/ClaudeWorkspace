@@ -1,8 +1,13 @@
 """
-fetcher.py — Fetches recent news for financial instruments via the Finnhub API.
+fetcher.py — Fetches news for financial instruments.
 
-Finnhub docs: https://finnhub.io/docs/api/company-news
-Free tier: 60 API calls/minute.
+Two sources:
+  FinnhubFetcher  — company news + price quotes for exchange-listed tickers
+  NewsAPIFetcher  — keyword-based headline search for private/unlisted instruments
+                    (requires a NewsAPI.org key; free tier: 100 req/day)
+
+Finnhub docs: https://finnhub.io/docs/api/company-news  (free: 60 req/min)
+NewsAPI docs:  https://newsapi.org/docs/endpoints/everything
 """
 
 import logging
@@ -15,9 +20,13 @@ import requests
 logger = logging.getLogger(__name__)
 
 FINNHUB_BASE = "https://finnhub.io/api/v1"
+NEWSAPI_BASE  = "https://newsapi.org/v2"
 
 # Finnhub general market news categories
 MARKET_NEWS_CATEGORIES = ["general", "forex", "crypto", "merger"]
+
+# Max chars for a single NewsAPI `q` parameter (leave headroom below 500)
+_NEWSAPI_QUERY_LIMIT = 450
 
 
 class FinnhubFetcher:
@@ -127,3 +136,155 @@ class FinnhubFetcher:
             # Finnhub returns a Unix timestamp in 'datetime'
             "datetime": raw.get("datetime", 0),
         }
+
+
+# ---------------------------------------------------------------------------
+# NewsAPI fetcher — keyword-based, for private/unlisted instruments
+# ---------------------------------------------------------------------------
+
+class NewsAPIFetcher:
+    """
+    Searches NewsAPI.org for financial news about private/unlisted instruments.
+
+    All instruments are batched into as few API calls as possible (one per
+    ~450-char query chunk) to stay well within the free-tier 100 req/day limit.
+
+    Matching uses HEADLINE-ONLY to filter noise: an article is only attributed
+    to an instrument if one of its keywords appears in the article headline.
+    This prevents, e.g., every article that mentions a popular brand name in
+    passing from flooding alerts.
+    """
+
+    def __init__(self, api_key: str):
+        self._api_key = api_key
+        self._session = requests.Session()
+
+    def fetch_keyword_news(
+        self,
+        instruments: list[dict],
+        lookback_hours: int = 4,
+        max_per_instrument: int = 5,
+    ) -> dict[str, list[dict]]:
+        """
+        Batch-fetch news for all instruments using OR-joined keyword queries.
+
+        Returns a dict mapping instrument name → list of articles where at
+        least one keyword appears in the article *headline* (case-insensitive).
+        Articles are deduplicated by URL across instruments.
+        """
+        result: dict[str, list[dict]] = {i["name"]: [] for i in instruments}
+
+        # Build per-instrument quoted terms, then chunk into ≤450-char queries
+        terms_by_instrument = {
+            i["name"]: [f'"{kw}"' for kw in i.get("keywords", [])]
+            for i in instruments
+            if i.get("keywords")
+        }
+
+        # Collect all terms flat for chunking, keeping track of which
+        # instrument each term belongs to
+        all_terms: list[tuple[str, str]] = []  # (term, instrument_name)
+        for instr_name, terms in terms_by_instrument.items():
+            for t in terms:
+                all_terms.append((t, instr_name))
+
+        if not all_terms:
+            return result
+
+        # Split into query chunks
+        chunks: list[list[tuple[str, str]]] = []
+        current_chunk: list[tuple[str, str]] = []
+        current_len = 0
+        for term, instr_name in all_terms:
+            # " OR " separator = 4 chars
+            needed = len(term) + (4 if current_chunk else 0)
+            if current_chunk and current_len + needed > _NEWSAPI_QUERY_LIMIT:
+                chunks.append(current_chunk)
+                current_chunk = [(term, instr_name)]
+                current_len = len(term)
+            else:
+                current_chunk.append((term, instr_name))
+                current_len += needed
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        from_str = (
+            datetime.now(tz=timezone.utc) - timedelta(hours=lookback_hours)
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        seen_urls: set[str] = set()
+
+        for chunk in chunks:
+            query = " OR ".join(t for t, _ in chunk)
+            articles = self._search(query, from_str)
+
+            for raw in articles:
+                url = raw.get("url", "")
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+
+                headline = (raw.get("title") or "").strip()
+                if not headline or headline == "[Removed]":
+                    continue
+
+                article = {
+                    "id": url or headline,
+                    "headline": headline,
+                    "summary": (raw.get("description") or "").strip(),
+                    "url": url,
+                    "source": ((raw.get("source") or {}).get("name") or ""),
+                    "datetime": _parse_iso(raw.get("publishedAt", "")),
+                }
+
+                # Attribute to instruments by headline match only
+                headline_lower = headline.lower()
+                for term, instr_name in chunk:
+                    if len(result[instr_name]) >= max_per_instrument:
+                        continue
+                    # Strip surrounding quotes from term for matching
+                    keyword = term.strip('"').lower()
+                    if keyword in headline_lower:
+                        result[instr_name].append(article)
+
+        return result
+
+    def _search(self, query: str, from_str: str) -> list[dict]:
+        params = {
+            "q": query,
+            "language": "en",
+            "sortBy": "publishedAt",
+            "from": from_str,
+            "pageSize": 100,
+            "apiKey": self._api_key,
+        }
+        try:
+            resp = self._session.get(
+                f"{NEWSAPI_BASE}/everything", params=params, timeout=15
+            )
+            if resp.status_code == 426:
+                logger.warning("NewsAPI requires a paid plan for this query.")
+                return []
+            if resp.status_code == 429:
+                logger.warning("NewsAPI rate-limit hit — skipping this cycle.")
+                return []
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("status") != "ok":
+                logger.warning("NewsAPI error: %s", data.get("message", data))
+                return []
+            return data.get("articles", [])
+        except requests.exceptions.RequestException as exc:
+            logger.error("NewsAPI request failed: %s", exc)
+            return []
+
+
+def _parse_iso(s: str) -> int:
+    """Parse an ISO-8601 timestamp string to a Unix integer."""
+    if not s:
+        return 0
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return int(dt.timestamp())
+    except (ValueError, AttributeError):
+        return 0
