@@ -30,16 +30,11 @@ check_interval_minutes: 15
 
 # --- Analysis settings ---
 analysis:
-  # Minimum confidence (0.0–1.0) for Claude to flag an article as significant.
-  # Higher = fewer, more certain alerts. Lower = more alerts.
-  min_confidence: 0.7
+  # Alert when an instrument moves more than this % from its previous close (intraday).
+  # 3.0 = alert on moves of 3% or more in either direction.
+  price_swing_threshold_pct: 3.0
 
-  # Only alert on these sentiment directions.
-  # Options: positive | negative | both
-  alert_on: both
-
-  # Maximum articles to analyze per instrument per check cycle.
-  # Keeps API costs predictable.
+  # Maximum articles to fetch per instrument per check cycle.
   max_articles_per_instrument: 5
 
 # --- Email alert settings ---

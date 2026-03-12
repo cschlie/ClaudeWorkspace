@@ -59,6 +59,19 @@ class FinnhubFetcher:
         articles.sort(key=lambda a: a["datetime"], reverse=True)
         return articles[:max_articles]
 
+    def fetch_quote(self, ticker: str) -> dict:
+        """
+        Return the latest quote for *ticker* from Finnhub.
+        Relevant fields: c (current price), dp (% change from prev close),
+        d (absolute change), h (high), l (low), o (open), pc (prev close).
+        Returns an empty dict if the request fails.
+        """
+        data = self._get("/quote", {"symbol": ticker.upper()})
+        if not isinstance(data, dict):
+            logger.warning("Unexpected quote response for %s: %s", ticker, data)
+            return {}
+        return data
+
     def fetch_market_news(
         self,
         category: str = "general",

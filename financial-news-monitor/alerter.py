@@ -1,5 +1,5 @@
 """
-alerter.py — Formats and sends email alerts for significant financial news.
+alerter.py — Formats and sends email alerts for financial news and price swings.
 
 Sends a single email per check cycle that bundles all alerts together,
 grouped by instrument, to avoid inbox flooding.
@@ -12,22 +12,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
 
-from analyzer import AnalysisResult
+from analyzer import Alert
 
 logger = logging.getLogger(__name__)
-
-# Sentiment → colour for HTML email
-SENTIMENT_COLOR = {
-    "positive": "#1a7340",   # dark green
-    "negative": "#b91c1c",   # dark red
-    "neutral":  "#4b5563",   # grey
-}
-
-SENTIMENT_LABEL = {
-    "positive": "POSITIVE",
-    "negative": "NEGATIVE",
-    "neutral":  "NEUTRAL",
-}
 
 
 class EmailAlerter:
@@ -39,18 +26,14 @@ class EmailAlerter:
     # Public interface
     # ------------------------------------------------------------------
 
-    def send_alert(self, results: list[AnalysisResult]) -> bool:
-        """
-        Send a single email summarising all significant articles.
-        Returns True on success, False on error.
-        """
-        if not results:
-            logger.debug("No significant articles — skipping email.")
+    def send_alert(self, alerts: list[Alert]) -> bool:
+        """Send a single email summarising all alerts. Returns True on success."""
+        if not alerts:
             return True
 
-        subject = self._build_subject(results)
-        html_body = self._build_html(results)
-        plain_body = self._build_plain(results)
+        subject = self._build_subject(alerts)
+        html_body = self._build_html(alerts)
+        plain_body = self._build_plain(alerts)
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
@@ -65,37 +48,37 @@ class EmailAlerter:
     # Subject line
     # ------------------------------------------------------------------
 
-    def _build_subject(self, results: list[AnalysisResult]) -> str:
+    def _build_subject(self, alerts: list[Alert]) -> str:
         prefix = self._cfg.get("subject_prefix", "[FinNews]")
-        tickers = sorted({r.instrument_ticker for r in results})
-        sentiments = {r.sentiment for r in results}
-
-        if sentiments == {"positive"}:
-            direction = "Positive"
-        elif sentiments == {"negative"}:
-            direction = "Negative"
-        else:
-            direction = "Mixed"
-
-        count = len(results)
+        tickers = sorted({a.ticker for a in alerts})
         ticker_str = ", ".join(tickers[:4])
         if len(tickers) > 4:
             ticker_str += f" +{len(tickers) - 4} more"
 
-        return f"{prefix} {direction} news ({count} alert{'s' if count > 1 else ''}) — {ticker_str}"
+        news_count = sum(1 for a in alerts if a.kind == "news")
+        swing_count = sum(1 for a in alerts if a.kind == "price_swing")
+
+        parts = []
+        if news_count:
+            parts.append(f"{news_count} news")
+        if swing_count:
+            parts.append(f"{swing_count} price swing{'s' if swing_count > 1 else ''}")
+
+        summary = " + ".join(parts)
+        return f"{prefix} {summary} — {ticker_str}"
 
     # ------------------------------------------------------------------
     # HTML body
     # ------------------------------------------------------------------
 
-    def _build_html(self, results: list[AnalysisResult]) -> str:
-        grouped = _group_by_instrument(results)
+    def _build_html(self, alerts: list[Alert]) -> str:
+        grouped = _group_by_instrument(alerts)
         now_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
         cards = []
-        for ticker, articles in grouped.items():
-            name = articles[0].instrument_name
-            article_html = "\n".join(self._article_card(a) for a in articles)
+        for ticker, instrument_alerts in grouped.items():
+            name = instrument_alerts[0].name
+            cards_html = "\n".join(self._alert_card(a) for a in instrument_alerts)
             cards.append(f"""
             <div style="margin-bottom:28px;">
               <h2 style="font-family:sans-serif;font-size:16px;font-weight:700;
@@ -103,7 +86,7 @@ class EmailAlerter:
                          padding-bottom:6px;margin-bottom:12px;">
                 {name} <span style="color:#6b7280;font-weight:400;">({ticker})</span>
               </h2>
-              {article_html}
+              {cards_html}
             </div>
             """)
 
@@ -118,52 +101,69 @@ class EmailAlerter:
                       border-radius:8px;padding:28px;
                       box-shadow:0 1px 3px rgba(0,0,0,0.1);">
             <h1 style="font-size:20px;color:#111827;margin-top:0;">
-              Financial News Alert
+              Financial Alert
               <span style="font-size:13px;font-weight:400;color:#6b7280;
                            margin-left:12px;">{now_str}</span>
             </h1>
             {body}
             <p style="font-size:11px;color:#9ca3af;margin-top:24px;
                       border-top:1px solid #f3f4f6;padding-top:12px;">
-              Generated by Financial News Monitor &middot; Powered by Claude Opus 4.6
+              Generated by Financial News Monitor
             </p>
           </div>
         </body>
         </html>
         """
 
-    def _article_card(self, result: AnalysisResult) -> str:
-        color = SENTIMENT_COLOR.get(result.sentiment, "#4b5563")
-        label = SENTIMENT_LABEL.get(result.sentiment, "NEUTRAL")
-        conf_pct = int(result.confidence * 100)
+    def _alert_card(self, alert: Alert) -> str:
+        if alert.kind == "price_swing":
+            return self._price_swing_card(alert)
+        return self._news_card(alert)
 
-        points_html = ""
-        if result.key_points:
-            li_items = "".join(f"<li style='margin:4px 0;'>{p}</li>" for p in result.key_points)
-            points_html = f"<ul style='margin:8px 0 0 0;padding-left:20px;color:#374151;font-size:13px;'>{li_items}</ul>"
-
-        pub_time = _fmt_unix(result.article_datetime)
-
+    def _news_card(self, alert: Alert) -> str:
+        pub_time = _fmt_unix(alert.article_datetime)
         return f"""
         <div style="border:1px solid #e5e7eb;border-radius:6px;
                     padding:14px;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="background:{color};color:#fff;font-size:11px;font-weight:700;
+          <div style="margin-bottom:8px;">
+            <span style="background:#1d4ed8;color:#fff;font-size:11px;font-weight:700;
                          padding:2px 8px;border-radius:12px;letter-spacing:.5px;">
-              {label}
+              NEWS
             </span>
-            <span style="font-size:11px;color:#6b7280;">
-              Confidence: {conf_pct}% &middot; {result.source} &middot; {pub_time}
+            <span style="font-size:11px;color:#6b7280;margin-left:8px;">
+              {alert.source} &middot; {pub_time}
             </span>
           </div>
-          <a href="{result.url}" style="font-size:14px;font-weight:600;color:#1d4ed8;
-                                        text-decoration:none;">
-            {result.headline}
+          <a href="{alert.url}" style="font-size:14px;font-weight:600;color:#1d4ed8;
+                                       text-decoration:none;">
+            {alert.headline}
           </a>
-          <p style="font-size:13px;color:#374151;margin:8px 0 0 0;">
-            {result.impact_summary}
+        </div>
+        """
+
+    def _price_swing_card(self, alert: Alert) -> str:
+        is_up = alert.direction == "up"
+        color = "#1a7340" if is_up else "#b91c1c"
+        arrow = "UP" if is_up else "DOWN"
+        sign = "+" if is_up else ""
+        return f"""
+        <div style="border:1px solid #e5e7eb;border-radius:6px;
+                    padding:14px;margin-bottom:12px;">
+          <div style="margin-bottom:8px;">
+            <span style="background:{color};color:#fff;font-size:11px;font-weight:700;
+                         padding:2px 8px;border-radius:12px;letter-spacing:.5px;">
+              PRICE {arrow}
+            </span>
+          </div>
+          <p style="font-size:14px;font-weight:600;color:#111827;margin:0;">
+            {alert.name} ({alert.ticker})
           </p>
-          {points_html}
+          <p style="font-size:13px;color:{color};font-weight:700;margin:6px 0 0 0;">
+            {sign}{alert.change_pct:.2f}% &nbsp;&middot;&nbsp;
+            <span style="color:#374151;font-weight:400;">
+              Current price: {alert.current_price:.2f}
+            </span>
+          </p>
         </div>
         """
 
@@ -171,23 +171,27 @@ class EmailAlerter:
     # Plain-text fallback
     # ------------------------------------------------------------------
 
-    def _build_plain(self, results: list[AnalysisResult]) -> str:
-        grouped = _group_by_instrument(results)
+    def _build_plain(self, alerts: list[Alert]) -> str:
+        grouped = _group_by_instrument(alerts)
         now_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-        lines = [f"Financial News Alert — {now_str}", "=" * 60, ""]
+        lines = [f"Financial Alert — {now_str}", "=" * 60, ""]
 
-        for ticker, articles in grouped.items():
-            name = articles[0].instrument_name
+        for ticker, instrument_alerts in grouped.items():
+            name = instrument_alerts[0].name
             lines.append(f"{name} ({ticker})")
             lines.append("-" * 40)
-            for a in articles:
-                pub_time = _fmt_unix(a.article_datetime)
-                lines.append(f"[{a.sentiment.upper()} {int(a.confidence*100)}%] {a.headline}")
-                lines.append(f"  Source: {a.source} | {pub_time}")
-                lines.append(f"  {a.impact_summary}")
-                for pt in a.key_points:
-                    lines.append(f"  • {pt}")
-                lines.append(f"  URL: {a.url}")
+            for a in instrument_alerts:
+                if a.kind == "news":
+                    pub_time = _fmt_unix(a.article_datetime)
+                    lines.append(f"[NEWS] {a.headline}")
+                    lines.append(f"  Source: {a.source} | {pub_time}")
+                    lines.append(f"  URL: {a.url}")
+                else:
+                    sign = "+" if a.direction == "up" else ""
+                    lines.append(
+                        f"[PRICE {a.direction.upper()}] "
+                        f"{sign}{a.change_pct:.2f}% | Current: {a.current_price:.2f}"
+                    )
                 lines.append("")
             lines.append("")
 
@@ -229,12 +233,10 @@ class EmailAlerter:
 # Helpers
 # ------------------------------------------------------------------
 
-def _group_by_instrument(
-    results: list[AnalysisResult],
-) -> dict[str, list[AnalysisResult]]:
-    grouped: dict[str, list[AnalysisResult]] = {}
-    for r in results:
-        grouped.setdefault(r.instrument_ticker, []).append(r)
+def _group_by_instrument(alerts: list[Alert]) -> dict[str, list[Alert]]:
+    grouped: dict[str, list[Alert]] = {}
+    for a in alerts:
+        grouped.setdefault(a.ticker, []).append(a)
     return grouped
 
 
