@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ newsletter_name }}</title>
+<style>
+  /* Reset */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0f0f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; }
+
+  /* Wrapper */
+  .wrapper { max-width: 680px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { background: #0f0f0f; border-radius: 12px 12px 0 0; padding: 32px 36px; text-align: center; }
+  .header .logo { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+  .header .tagline { font-size: 13px; color: #888; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .header .date-badge { display: inline-block; margin-top: 16px; background: #1e1e1e; color: #aaa; font-size: 12px; padding: 6px 14px; border-radius: 20px; letter-spacing: 0.5px; }
+
+  /* Main body */
+  .body { background: #ffffff; padding: 0 36px 36px; }
+
+  /* Section headings */
+  .section { margin-top: 36px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+  .section-icon { font-size: 20px; }
+  .section-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #0f0f0f; }
+
+  /* ─── WEATHER ─── */
+  .weather-card { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 24px; color: #fff; }
+  .weather-main { display: flex; justify-content: space-between; align-items: flex-start; }
+  .weather-temp { font-size: 52px; font-weight: 300; line-height: 1; }
+  .weather-temp sup { font-size: 22px; vertical-align: super; }
+  .weather-city { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .weather-desc { font-size: 14px; color: #aac8e4; }
+  .weather-detail { font-size: 12px; color: #7a9ab5; margin-top: 6px; }
+  .weather-forecast { display: flex; gap: 12px; margin-top: 20px; }
+  .forecast-day { flex: 1; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 8px; text-align: center; }
+  .forecast-date { font-size: 11px; color: #7a9ab5; margin-bottom: 4px; }
+  .forecast-desc { font-size: 11px; color: #aac8e4; margin: 4px 0; text-transform: capitalize; }
+  .forecast-range { font-size: 13px; font-weight: 600; }
+
+  /* ─── FINANCE TABLE ─── */
+  .finance-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .finance-table th { text-align: left; padding: 10px 12px; background: #f8f8f8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 2px solid #eee; }
+  .finance-table td { padding: 12px 12px; border-bottom: 1px solid #f4f4f4; vertical-align: middle; }
+  .finance-table tr:last-child td { border-bottom: none; }
+  .ticker-badge { display: inline-block; background: #f0f0f0; color: #333; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; font-family: 'Courier New', monospace; }
+  .price { font-weight: 700; font-size: 15px; }
+  .change-up { color: #16a34a; font-weight: 600; }
+  .change-down { color: #dc2626; font-weight: 600; }
+  .arrow-up::before { content: "▲ "; }
+  .arrow-down::before { content: "▼ "; }
+
+  /* ─── ARTICLE CARDS ─── */
+  .article-list { display: flex; flex-direction: column; gap: 12px; }
+  .article-card { border: 1px solid #ebebeb; border-radius: 10px; padding: 16px; transition: border-color 0.2s; }
+  .article-meta { font-size: 11px; color: #999; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .article-title { font-size: 15px; font-weight: 700; color: #0f0f0f; text-decoration: none; line-height: 1.4; display: block; margin-bottom: 6px; }
+  .article-title:hover { color: #2563eb; }
+  .article-summary { font-size: 13px; color: #555; line-height: 1.6; }
+
+  /* ─── JOB TABLE ─── */
+  .job-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .job-table th { text-align: left; padding: 10px 12px; background: #f8f8f8; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 2px solid #eee; }
+  .job-table td { padding: 12px 12px; border-bottom: 1px solid #f4f4f4; vertical-align: top; }
+  .job-table tr:last-child td { border-bottom: none; }
+  .job-title-link { font-weight: 600; color: #0f0f0f; text-decoration: none; font-size: 14px; display: block; margin-bottom: 4px; }
+  .job-title-link:hover { color: #2563eb; }
+  .job-source { font-size: 11px; color: #999; }
+  .tag { display: inline-block; background: #e8f0fe; color: #1a56db; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 3px; margin: 2px 2px 0 0; text-transform: uppercase; letter-spacing: 0.3px; }
+  .apply-btn { display: inline-block; background: #0f0f0f; color: #fff !important; font-size: 11px; font-weight: 600; padding: 7px 14px; border-radius: 6px; text-decoration: none !important; white-space: nowrap; letter-spacing: 0.3px; }
+  .apply-btn:hover { background: #333; }
+
+  /* ─── FASHION DEALS ─── */
+  .deal-list { display: flex; flex-direction: column; gap: 10px; }
+  .deal-card { background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .deal-info { flex: 1; }
+  .deal-title { font-size: 14px; font-weight: 600; color: #0f0f0f; text-decoration: none; display: block; margin-bottom: 3px; line-height: 1.4; }
+  .deal-title:hover { color: #2563eb; }
+  .deal-source { font-size: 11px; color: #999; }
+  .deal-cta { flex-shrink: 0; }
+  .view-btn { display: inline-block; background: #fff; border: 1.5px solid #d1d5db; color: #333 !important; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 6px; text-decoration: none !important; }
+
+  /* ─── CALENDAR ─── */
+  .cal-list { display: flex; flex-direction: column; gap: 8px; }
+  .cal-item { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #fafafa; border-radius: 8px; border-left: 3px solid #2563eb; }
+  .cal-dot-today { border-left-color: #16a34a; }
+  .cal-date { min-width: 110px; font-size: 12px; color: #555; font-weight: 600; }
+  .cal-time { min-width: 60px; font-size: 11px; color: #888; }
+  .cal-summary { font-size: 14px; color: #0f0f0f; font-weight: 500; }
+
+  /* ─── EMPTY STATES ─── */
+  .empty { text-align: center; padding: 24px; color: #aaa; font-size: 14px; background: #fafafa; border-radius: 8px; }
+
+  /* Footer */
+  .footer { background: #0f0f0f; border-radius: 0 0 12px 12px; padding: 24px 36px; text-align: center; color: #555; font-size: 12px; line-height: 1.8; }
+  .footer a { color: #888; text-decoration: none; }
+  .footer a:hover { color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">{{ newsletter_name }}</div>
+    <div class="tagline">Your personalised daily brief</div>
+    <div class="date-badge">{{ generated_at }}</div>
+  </div>
+
+  <div class="body">
+
+    <!-- ══════════════ WEATHER ══════════════ -->
+    {% if weather %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🌤</span>
+        <span class="section-title">Weather — {{ weather.city }}</span>
+      </div>
+      <div class="weather-card">
+        <div class="weather-main">
+          <div>
+            <div class="weather-city">{{ weather.city }}</div>
+            <div class="weather-desc">{{ weather.description }}</div>
+            <div class="weather-detail">Humidity {{ weather.humidity }}% &nbsp;·&nbsp; Feels like {{ weather.feels_like }}{{ weather.unit }}</div>
+          </div>
+          <div class="weather-temp">{{ weather.temp }}<sup>{{ weather.unit }}</sup></div>
+        </div>
+        {% if weather.forecast %}
+        <div class="weather-forecast">
+          {% for day in weather.forecast %}
+          <div class="forecast-day">
+            <div class="forecast-date">{{ day.date }}</div>
+            <div class="forecast-desc">{{ day.description }}</div>
+            <div class="forecast-range">{{ day.high }}° / {{ day.low }}°</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ CALENDAR ══════════════ -->
+    {% if calendar %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📅</span>
+        <span class="section-title">Upcoming Events</span>
+      </div>
+      <div class="cal-list">
+        {% for event in calendar %}
+        <div class="cal-item {% if event.days_away == 0 %}cal-dot-today{% endif %}">
+          <div class="cal-date">{{ event.date }}{% if event.days_away == 0 %} <strong>(Today)</strong>{% elif event.days_away == 1 %} <em>(Tomorrow)</em>{% endif %}</div>
+          <div class="cal-time">{{ event.time }}</div>
+          <div class="cal-summary">{{ event.summary }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ MARKETS ══════════════ -->
+    {% if finance %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📈</span>
+        <span class="section-title">Markets</span>
+      </div>
+      <table class="finance-table">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Price</th>
+            <th>Change</th>
+            <th>Change %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in finance %}
+          <tr>
+            <td>
+              <span class="ticker-badge">{{ item.ticker }}</span>
+              <div style="font-size:12px;color:#888;margin-top:3px;">{{ item.name }}</div>
+            </td>
+            <td><span class="price">{{ item.currency }}{{ "{:,.2f}".format(item.price) }}</span></td>
+            <td class="{% if item.direction == 'up' %}change-up{% else %}change-down{% endif %}">
+              <span class="{% if item.direction == 'up' %}arrow-up{% else %}arrow-down{% endif %}">{{ item.currency }}{{ "{:+.2f}".format(item.change) }}</span>
+            </td>
+            <td class="{% if item.direction == 'up' %}change-up{% else %}change-down{% endif %}">
+              {{ "{:+.2f}".format(item.change_pct) }}%
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ SOFTWARE JOBS ══════════════ -->
+    {% if jobs %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">💼</span>
+        <span class="section-title">Software Jobs</span>
+      </div>
+      <table class="job-table">
+        <thead>
+          <tr>
+            <th>Role &amp; Tags</th>
+            <th>Source</th>
+            <th>Apply</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+          <tr>
+            <td>
+              <a class="job-title-link" href="{{ job.url }}" target="_blank">{{ job.title }}</a>
+              {% for tag in job.tags %}<span class="tag">{{ tag }}</span>{% endfor %}
+            </td>
+            <td><span class="job-source">{{ job.source }}</span></td>
+            <td><a class="apply-btn" href="{{ job.url }}" target="_blank">Apply →</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">💼</span>
+        <span class="section-title">Software Jobs</span>
+      </div>
+      <div class="empty">No new job listings right now. Check back later!</div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ MENSWEAR DEALS ══════════════ -->
+    {% if fashion %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🧥</span>
+        <span class="section-title">Menswear Sales &amp; Deals</span>
+      </div>
+      <div class="deal-list">
+        {% for deal in fashion %}
+        <div class="deal-card">
+          <div class="deal-info">
+            <a class="deal-title" href="{{ deal.url }}" target="_blank">{{ deal.title }}</a>
+            <div class="deal-source">via {{ deal.source }}</div>
+          </div>
+          <div class="deal-cta">
+            <a class="view-btn" href="{{ deal.url }}" target="_blank">View →</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% elif fashion is defined %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🧥</span>
+        <span class="section-title">Menswear Sales &amp; Deals</span>
+      </div>
+      <div class="empty">No deals spotted today. Keep an eye out!</div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ CULTURE & ARTS ══════════════ -->
+    {% if culture %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🎭</span>
+        <span class="section-title">Culture &amp; Arts — Long Reads</span>
+      </div>
+      <div class="article-list">
+        {% for article in culture %}
+        <div class="article-card">
+          <div class="article-meta">{{ article.source }}</div>
+          <a class="article-title" href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+          {% if article.summary %}
+          <div class="article-summary">{{ article.summary }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ══════════════ CUSTOM RSS FEEDS ══════════════ -->
+    {% if custom_feeds %}
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📡</span>
+        <span class="section-title">Your Custom Feeds</span>
+      </div>
+      <div class="article-list">
+        {% for article in custom_feeds %}
+        <div class="article-card">
+          <div class="article-meta">{{ article.source }}</div>
+          <a class="article-title" href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+          {% if article.summary %}
+          <div class="article-summary">{{ article.summary }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /body -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>{{ newsletter_name }} &nbsp;·&nbsp; Sent {{ generated_at }}</p>
+    <p style="margin-top:6px; color:#444;">
+      You're receiving this because you set it up. No unsubscribe needed — just stop the script.
+    </p>
+  </div>
+
+</div><!-- /wrapper -->
+</body>
+</html>
